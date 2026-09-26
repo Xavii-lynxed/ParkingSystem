@@ -1,0 +1,24 @@
+Slots
+
+Column	     Type	                    Notes
+slot_id	      INT, PK	
+slot_number	  VARCHAR	                driver-facing label, e.g. "A12"
+status	       ENUM
+            ('Available','Occupied')	updated on entry/exit
+
+Vehicles
+
+Column          	Type	      Notes
+registration_number	VARCHAR, PK	
+vehicle_type	    VARCHAR	      car, motorbike, etc.
+
+Transactions
+
+Column          	Type	                  Notes
+transaction_id	    INT, PK, auto-increment	
+registration_number	VARCHAR, FK → Vehicles	
+slot_id	            INT, FK → Slots	
+entry_time	        DATETIME	
+exit_time	        DATETIME, nullable	      null while still parked
+amount_paid	        DECIMAL, nullable	      set on exit
+status	            ENUM('Parked','Exited')

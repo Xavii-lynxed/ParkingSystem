@@ -1,0 +1,22 @@
+1. Array — Parking Slots
+An array is used to hold the parking slots, since the total numberof slots is fixed once
+the facility is defined. Each element holds a slot's ID and status 
+(Available / Occupied). An array gives O(1) access by slot index, which keeps the
+slot-lookup and display modules fast, and its fixed size matches a fixed physical lot.
+
+2. Dictionary / Hash Map — Active Vehicle Records 
+A dictionary keyed by vehicle registrationnumber stores each active visit's details
+(vehicle type, assigned slot, entry time). Thisgives O(1) lookup on exit — exactly what
+Module 4 needs — instead of scanning every record. This is the structure backing Module 3's
+active-record operations.
+
+3. Queue — Waiting Vehicles
+A queue holds vehicles that arrive when the lot is full, in first-in-first-out order, so
+the vehicle that has waited longest gets the next freed slot.This is what Module 7 operates
+on, and it's now actually invoked from Modules 2 (enqueue on full) and 4 (dequeue on exit).
+
+4. Persistent Storage (Database Tables) 
+The array, dictionary and queue above are the system's in-memory, runtime structures — fast,
+but they vanish if the program restarts.Database tables (Vehicles, Slots, Transactions — see
+Task c below) back these structuresso that parking history and payment records survive 
+beyond a single running session, and so reports can be generated after the fact.

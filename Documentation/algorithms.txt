@@ -1,0 +1,147 @@
+Module 1: Locate Available Slot 
+
+1. Start
+2. Get all parking slots
+3. For each slot:
+    If slot.status == "Available":
+         Return slot
+4. If no slot found:
+     Return null
+5. Stop
+
+Module 2: Vehicle Entry
+1. Start
+2. Receive vehicle registration number
+3. Receive vehicle type
+4. Search active parking records for this registration number
+5. If a matching active record is found:
+     a. Display "Vehicle already parked"
+     b. Stop
+6. Call Module 1 (Locate Available Slot)
+7. If no slot is returned:
+     a. Enqueue vehicle (registration number, vehicle type, request time)
+        onto the Waiting Queue (see Module 7)
+     b. Display "Parking full — you are position N in the queue"
+     c. Stop
+8. Assign the returned slot to the vehicle
+9. Create a new parking record (registration number, vehicle type,
+   assigned slot, entry time = current time, status = "Parked")
+10. Mark the assigned slot as Occupied
+11. Display the assigned slot to the driver
+12. Stop
+
+Module 3: Parking Records
+1. Start
+2. Expose the following operations to other modules:
+
+   CREATE(registrationNumber, vehicleType, slotId, entryTime):
+     a. Build a new record:
+          { regNumber, vehicleType, slotId, entryTime,
+            exitTime = null, amountPaid = null, status = "Parked" }
+     b. Store the record, keyed by registrationNumber
+     c. Return the stored record
+
+   FIND(registrationNumber):
+     a. Search stored records for one where
+        regNumber == registrationNumber AND status == "Parked"
+     b. If found, return the record
+     c. Else, return null
+
+   UPDATE(registrationNumber, exitTime, amountPaid, status):
+     a. Locate the active record via FIND(registrationNumber)
+     b. If not found, return error "Record not found"
+     c. Set record.exitTime = exitTime
+     d. Set record.amountPaid = amountPaid
+     e. Set record.status = status  (e.g. "Exited")
+     f. Move the record from active storage to history/archive
+     g. Return the updated record
+
+   GET_BY_SLOT(slotId):
+     a. Search active records for one where slotId matches
+     b. Return it if found, else return null
+
+   GET_ALL():
+     a. Return all active records (optionally merged with archived
+        records if a full report is requested)
+
+3. Stop
+
+Module 4: Vehicle Exit & Fee Calculation
+1. Start
+2. Receive vehicle registration number
+3. Call Module 3.find(registration number)
+4. If no record is found:
+     a. Display "Vehicle not found"
+     b. Stop
+5. Retrieve entry time from the record
+6. Set exit time = current time
+7. Calculate duration in minutes = exit time − entry time
+8. Determine parking fee:
+     a. If duration <= 30 minutes:        fee = Ksh 0
+     b. Else if duration <= 120 minutes:  fee = Ksh 50
+     c. Else if duration <= 240 minutes:  fee = Ksh 100
+     d. Else if duration <= 360 minutes:  fee = Ksh 300
+     e. Else:                             fee = Ksh 500
+9. Display duration and fee to driver
+10. Receive payment
+11. If payment is successful:
+      a. Call Module 3.update(regNumber, exitTime, amountPaid=fee, status="Exited")
+      b. Mark the slot as Available
+      c. Call Module 5 (Barrier Control) → open exit barrier
+      d. Call Module 7 (Waiting Queue).dequeue() → if a vehicle is waiting,
+         assign it the freed slot and notify it (repeat Module 2 steps 8–11
+         for that vehicle)
+      e. Stop
+12. Else:
+      a. Display "Payment unsuccessful — please retry"
+      b. If retry count < 3:
+           Increment retry count, go to step 10
+         Else:
+           Display "Payment failed — see attendant"
+           Stop
+
+Module 5: Barrier Control
+
+1. Start
+2. Receive "open" signal for a given exit point
+3. Actuate barrier to open position
+4. Wait for vehicle-passed sensor signal (or timeout)
+5. Actuate barrier to closed position
+6. Log barrier event (timestamp, exit point, related registration number)
+7. Stop
+
+Module 6a: Public Slot Display (Driver-Facing, Pre-Entry)
+1. Start
+2. Call Module 3.getAll() → all slots
+3. Count total slots
+4. Count occupied slots
+5. Available = total − occupied
+6. Display: total slots, available slots
+7. Refresh display whenever a slot's status changes
+8. Stop
+
+Module 6b: Admin Dashboard
+
+1. Start
+2. Call Module 3.getAll() → all records and slot statuses
+3. For each slot:
+     If occupied: display slot ID, registration number, vehicle type, entry time
+     Else: display slot ID as "Available"
+4. Display summary totals (occupied / available / revenue collected today)
+5. Refresh display whenever underlying records change
+6. Stop
+
+1. Start
+2. ENQUEUE(regNumber, vehicleType, requestTime):
+     a. Add entry to the back of the Waiting Queue
+     b. Return the entry's position in the queue
+
+3. DEQUEUE():
+     a. If the queue is empty, return null
+     b. Remove and return the entry at the front of the queue
+
+4. POSITION(regNumber):
+     a. Find the entry's index in the queue
+     b. Return index + 1 (1-based position for display)
+
+5. Stop
